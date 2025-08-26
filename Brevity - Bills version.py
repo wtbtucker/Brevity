@@ -191,7 +191,7 @@ def model_stock(sale_df, inv_df):
 	orderz_df['ID'] = (orderz_df['SEX'].astype(str) + '-' + orderz_df['ITEM'].astype(str) + '-' + orderz_df['SIZE'].astype(str))
 	print(orderz_df)
 	orderz_df.columns = ['VENDOR','SEX','ITEM','SIZE','SALES','INV-S','MOD-S','ID']
-	# orderz_df.to_csv(filepath + 'Brevity Stuff\\Orderz.csv', index=False)								#
+	# orderz_df.to_csv(filepath + 'Brevity Stuff\\Orderz.csv', index=False)								
 	return pull_df
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>> ALLOCATION
@@ -213,7 +213,7 @@ def allocate(pull_df):
 			i = 1
 	break_up(data,i)
 	almost = pd.DataFrame(z) 
-	almost.to_csv(filepath + 'Brevity Stuff\\z.csv', index=False)
+	# almost.to_csv(filepath + 'Brevity Stuff\\z.csv', index=False)
 	print ('The total for this pull is %d units' %int(almost[2].sum()))
 	almost = almost.pivot_table(index = 0, columns = 1, values = 2)
 	return almost

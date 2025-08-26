@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 from sales_processor import SalesProcessor
 from inventory_processor import InventoryProcessor
+from model_stock_generator import ModelStockGenerator
 
 def create_sku_df(filepath): #creates a df that will allow the RICS custom entries to be applied to a df
 	rics_skus_df = pd.read_csv(filepath + 'FW REPORTS\\SKU FILE\\SKUFile.csv', usecols = ['SKU', 'SupplierName', 'CustomEntry', 'CustomEntry3'],\
@@ -21,3 +22,7 @@ sales_df = sales_processor.pull_sales(sku_df)
 
 inventory_processor = InventoryProcessor(base_path)
 inventory_df = inventory_processor.pull_inventory(sku_df)
+
+model_stock_generator = ModelStockGenerator(base_path)
+models_df = model_stock_generator.create_models(sales_df)
+print(models_df.head(5))

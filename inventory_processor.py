@@ -12,15 +12,15 @@ class InventoryProcessor:
         Create snapshot df of inventory at the stores, warehouse and in transit
         '''
         inv_df = self.clean_inventory(sku_df)																		
-        temp_inv_df = inv_df.groupby(['ID', 'PULL ID', 'STORE'])									
+        temp_inv_df = inv_df.groupby(['ID', 'PULL ID', 'STORE', 'SKU'])									
         temp_inv_df = temp_inv_df.sum()																#creates inventory by ID (not by SKU)
         temp_inv_df = temp_inv_df.reset_index()														#un-filters the df into a normal df setup
         mask = ((temp_inv_df['STORE'] == '8')&(temp_inv_df['INV'] > 0))								#creates a filter of all ITEMS the wh has on-hand
         wh_df = temp_inv_df[mask]																	#applies the filter
-        wh_df = wh_df.loc[:,['PULL ID', 'INV']]														#shrinks the df to only pull id & units for later merger by pull id
-        wh_df.columns = ['PULL ID','WH']															#renames columns for later merger so wh has it's own column
+        wh_df = wh_df.loc[:,['PULL ID', 'SKU', 'INV']]														#shrinks the df to only pull id & units for later merger by pull id
+        wh_df.columns = ['PULL ID', 'SKU', 'WH']															#renames columns for later merger so wh has it's own column
         # wh_df.to_csv(filepath + 'Brevity Stuff\\z-WH_INV.csv', index=False)										#saves the wh_df to a file
-        temp_inv_df = temp_inv_df.loc[:,['ID', 'PULL ID', 'INV']]									#shrinks the inv to only relevant columns
+        temp_inv_df = temp_inv_df.loc[:,['ID', 'PULL ID', 'SKU', 'INV']]									#shrinks the inv to only relevant columns
         #inv_df.to_csv(filepath + 'Z-Inv2.csv', index=False)										#saves inv_df to a file
         return temp_inv_df
 
