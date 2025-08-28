@@ -12,15 +12,15 @@ class InventoryProcessor:
         Create snapshot df of inventory at the stores, warehouse and in transit
         '''
         inv_df = self.clean_inventory(sku_df)																		
-        temp_inv_df = inv_df.groupby(['ID', 'PULL ID', 'STORE', 'SKU'])									
+        temp_inv_df = inv_df.groupby(['ID', 'PULL ID', 'STORE', 'UPC'])									
         temp_inv_df = temp_inv_df.sum()																#creates inventory by ID (not by SKU)
         temp_inv_df = temp_inv_df.reset_index()														#un-filters the df into a normal df setup
         mask = ((temp_inv_df['STORE'] == '8')&(temp_inv_df['INV'] > 0))								#creates a filter of all ITEMS the wh has on-hand
         wh_df = temp_inv_df[mask]																	#applies the filter
-        wh_df = wh_df.loc[:,['PULL ID', 'SKU', 'INV']]														#shrinks the df to only pull id & units for later merger by pull id
-        wh_df.columns = ['PULL ID', 'SKU', 'WH']															#renames columns for later merger so wh has it's own column
+        wh_df = wh_df.loc[:,['PULL ID', 'UPC', 'INV']]														#shrinks the df to only pull id & units for later merger by pull id
+        wh_df.columns = ['PULL ID', 'UPC', 'WH']															#renames columns for later merger so wh has it's own column
         # wh_df.to_csv(filepath + 'Brevity Stuff\\z-WH_INV.csv', index=False)										#saves the wh_df to a file
-        temp_inv_df = temp_inv_df.loc[:,['ID', 'PULL ID', 'SKU', 'INV']]									#shrinks the inv to only relevant columns
+        temp_inv_df = temp_inv_df.loc[:,['ID', 'PULL ID', 'UPC', 'INV']]									#shrinks the inv to only relevant columns
         #inv_df.to_csv(filepath + 'Z-Inv2.csv', index=False)										#saves inv_df to a file
         return temp_inv_df
 
@@ -34,8 +34,15 @@ class InventoryProcessor:
         inv_df = inv_df.dropna(subset = ['INV'])													#shrinks the df to only SKU's that have on-hand inventory
         inv_df['PULL ID'] = (inv_df['SEX'].astype(str) + '-' + inv_df['ITEM'].astype(str) + '-' + \
             inv_df['SIZE'].astype(str))																#creates the pull id
-        inv_df['ID'] = (inv_df['STORE'].astype(str) + '-' + inv_df['PULL ID'].astype(str))			#creates the id
-        return inv_df
+        inv_df['ID'] = (inv_df['STORE'].astype(str) + '-' + inv_df['PULL ID'].astype(str))	
+        full_df = self.add_upc(inv_df)
+        return full_df
+    
+    def add_upc(self, inv_df):
+        upc_df = pd.read_csv(self.base_path + 'FW Reports\\UPC List\\UPCList.csv', usecols=['SKU', 'UPC', 'COL'], encoding='utf_8_sig', dtype=str)
+        upc_df.drop_duplicates(subset=['UPC'], inplace=True)
+        full_df = pd.merge(upc_df, inv_df, how='right', left_on=['SKU', 'COL'], right_on=['SKU', 'SIZE']) 
+        return full_df
 
     def pull_in_transit(self):
         raw_rit_df = pd.read_csv(self.base_path + 'FW REPORTS\\STOCK STATUS\\in-transit.csv', usecols=['Sku', 'GridColumn', 'InventoryType', 'Qty', 'Comment'],\
