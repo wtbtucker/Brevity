@@ -1,50 +1,95 @@
 import pandas as pd
 import os
 
-# Need color information included
-# Just use SKUs?
+
+
+class Inventory:
+    '''
+    stores information about current inventory levels for quick lookup
+    inventory = {
+        "M-CUMULUS-10": {
+            "1": {"197966046156": 10, "197968286628": 5},
+            "8": {"197966046156": 2, "197968286635": 8}
+        },
+        "M-1080 (WIDE)-10": {
+            "2": {"black": 20},
+            "8": {"white": 15, "black": 3}
+        }
+    }
+    '''
+    def __init__(self, inventory: dict):
+        self.inv = inventory
+
+
+    def get_colors(self, product_id: str, location: int) -> list[str]:
+        '''
+        Look up the colors currently in stock at a location for a particular product
+        Will use to allocate colors not currently in stock to that location
+        Args: 
+            product_id: Gender, SKU, size eg. M-1080 (WIDE)-10
+            location: integer store code eg. 5
+        '''
+        pass
+
+    # get colors available at a store
+    # check model stock
+
+    def get_total_quantity(self, product_id: str, location: int) -> int:
+        '''
+        Check total quantity of a product available at a location
+        Use for comparing store inventory levels to model stock
+        Use for checking quantity available for distribution from the warehouse
+        Args: 
+            product_id: Gender, SKU, size eg. M-1080 (WIDE)-10
+            location: integer store code eg. 5        
+        '''
+        pass
+
+    def decrement_quantity(self, upc: str, location: int) -> None:
+        '''
+        Use to remove one item from warehouse inventory
+        Args:
+            upc: product barcode eg. 197966046156
+            location: integer store code eg. 5    
+        '''
+
+
+
+
+
 class InventoryProcessor:
     def __init__(self, base_path):
         self.base_path = base_path
 
-    def pull_inventory(self, sku_df):
-        '''
-        Create snapshot df of inventory at the stores, warehouse and in transit
-        '''
-        inv_df = self.clean_inventory(sku_df)																		
-        temp_inv_df = inv_df.groupby(['ID', 'PULL ID', 'STORE', 'UPC'])									
-        temp_inv_df = temp_inv_df.sum()																#creates inventory by ID (not by SKU)
-        temp_inv_df = temp_inv_df.reset_index()														#un-filters the df into a normal df setup
-        mask = ((temp_inv_df['STORE'] == '8')&(temp_inv_df['INV'] > 0))								#creates a filter of all ITEMS the wh has on-hand
-        wh_df = temp_inv_df[mask]																	#applies the filter
-        wh_df = wh_df.loc[:,['PULL ID', 'UPC', 'INV']]														#shrinks the df to only pull id & units for later merger by pull id
-        wh_df.columns = ['PULL ID', 'UPC', 'WH']															#renames columns for later merger so wh has it's own column
-        # wh_df.to_csv(filepath + 'Brevity Stuff\\z-WH_INV.csv', index=False)										#saves the wh_df to a file
-        temp_inv_df = temp_inv_df.loc[:,['ID', 'PULL ID', 'UPC', 'INV']]									#shrinks the inv to only relevant columns
-        #inv_df.to_csv(filepath + 'Z-Inv2.csv', index=False)										#saves inv_df to a file
-        return temp_inv_df
+    def load_inventory(self):
+        onhand_df = self._load_onhand()
+        in_transit_df = self._load_in_transit()
+        self.inv_df = pd.concat([onhand_df, in_transit_df])
+        self.inv_df = self.inv_df.dropna(subset = ['INV'])
 
-    def clean_inventory(self, sku_df):
-        ss_df = pd.read_csv(self.base_path + 'FW REPORTS\\STOCK STATUS\\StockStatus.csv', usecols=['StoreCode', 'SKU', 'COL', 'OnHand'], encoding='utf_8_sig',\
-            converters={'StoreCode':str, 'SKU':str, 'COL':str})										#creates SS (stock status inventory) df
-        rit_df = self.pull_in_transit()																		#CALLS FUNCTION - creates in RIT (RICS in-transit inventory) df 
-        ss_df.columns = ['STORE', 'SKU', 'SIZE', 'INV']												#renames the columns of the stock status df
-        inv_df = pd.concat([ss_df, rit_df])																#CALLS FUNCTION - creates a df of sku info from a RICS file
-        inv_df = pd.merge(inv_df, sku_df, on = 'SKU', how = 'outer')								#adds custom entries to the inventory df
-        inv_df = inv_df.dropna(subset = ['INV'])													#shrinks the df to only SKU's that have on-hand inventory
-        inv_df['PULL ID'] = (inv_df['SEX'].astype(str) + '-' + inv_df['ITEM'].astype(str) + '-' + \
-            inv_df['SIZE'].astype(str))																#creates the pull id
-        inv_df['ID'] = (inv_df['STORE'].astype(str) + '-' + inv_df['PULL ID'].astype(str))	
-        full_df = self.add_upc(inv_df)
-        return full_df
-    
-    def add_upc(self, inv_df):
+    def add_keyword(self, sku_df):
+        '''
+        Adds RICS keyword eg "KAYANO" to the inventory dataframe
+        '''
+        self.inv_df = pd.merge(self.inv_df, sku_df, on = 'SKU', how = 'outer')
+        self.inv_df.dropna(subset=['INV'], inplace=True)
+        self.inv_df['PULL ID'] = (self.inv_df['SEX'].astype(str) + '-' + self.inv_df['ITEM'].astype(str) + '-' + \
+            self.inv_df['SIZE'].astype(str))        
+        print(self.inv_df)
+
+    def add_upc(self):
         upc_df = pd.read_csv(self.base_path + 'FW Reports\\UPC List\\UPCList.csv', usecols=['SKU', 'UPC', 'COL'], encoding='utf_8_sig', dtype=str)
         upc_df.drop_duplicates(subset=['UPC'], inplace=True)
-        full_df = pd.merge(upc_df, inv_df, how='right', left_on=['SKU', 'COL'], right_on=['SKU', 'SIZE']) 
-        return full_df
-
-    def pull_in_transit(self):
+        self.inv_df = pd.merge(upc_df, self.inv_df, how='right', left_on=['SKU', 'COL'], right_on=['SKU', 'SIZE'])      
+        print(self.inv_df.head())
+        # load dataframe of onhand items from RICS stock status report
+    def _load_onhand(self):
+        ss_df = pd.read_csv(self.base_path + 'FW REPORTS\\STOCK STATUS\\StockStatus.csv', usecols=['StoreCode', 'SKU', 'COL', 'OnHand'], encoding='utf_8_sig',\
+            converters={'StoreCode':str, 'SKU':str, 'COL':str})
+        ss_df.columns = ['STORE', 'SKU', 'SIZE', 'INV']	
+        return ss_df
+        
+    def _load_in_transit(self):
         raw_rit_df = pd.read_csv(self.base_path + 'FW REPORTS\\STOCK STATUS\\in-transit.csv', usecols=['Sku', 'GridColumn', 'InventoryType', 'Qty', 'Comment'],\
             converters={'SKU':str, 'GridColumn':str, 'Qty':int})									#create raw RIT (RICS in transit) 
         raw_rit_df = raw_rit_df[raw_rit_df['Comment'].str.contains("SD")]							#filters RIT to only stock drops
@@ -71,3 +116,16 @@ class InventoryProcessor:
             rit_df['INV'] = rit_df['INV'] * -1															#makes the negative inv positive
         return rit_df
 
+    def clean_inventory(self) -> Inventory:
+        '''
+        Transform dataframe into dictionary datastructure for faster operations
+        '''
+        inventory = {}
+        for _, row in self.inv_df.iterrows():
+            id_ = row["PULL ID"]
+            store = row["STORE"]
+            upc = row["UPC"]
+            inv = int(row["INV"])
+            inventory.setdefault(id_, {}).setdefault(store, {})[upc] = inv
+
+        return Inventory(inventory)

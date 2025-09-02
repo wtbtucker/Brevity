@@ -3,6 +3,7 @@ import os
 from sales_processor import SalesProcessor
 from inventory_processor import InventoryProcessor
 from model_stock_generator import ModelStockGenerator
+from inventory_processor import Inventory
 
 def create_sku_df(filepath): #creates a df that will allow the RICS custom entries to be applied to a df
 	rics_skus_df = pd.read_csv(filepath + 'FW REPORTS\\SKU FILE\\SKUFile.csv', usecols = ['SKU', 'SupplierName', 'CustomEntry', 'CustomEntry3'],\
@@ -18,8 +19,10 @@ sku_df = create_sku_df(base_path)
 
 # Load current inventory levels using stock status and in-transit reports
 inventory_processor = InventoryProcessor(base_path)
-inventory_df = inventory_processor.pull_inventory(sku_df)
-print(inventory_df.head(5))
+inventory_processor.load_inventory()
+inventory_processor.add_keyword(sku_df)
+inventory_processor.add_upc()
+inventory = inventory_processor.clean_inventory()
 
 # Use RICS inventory detail report to create manageable dataframe of sales
 sales_processor = SalesProcessor(base_path)
@@ -29,10 +32,11 @@ print(sales_df.head(5))
 # Use those sales to set ideal inventory levels for each store (model stocks)
 model_stock_generator = ModelStockGenerator(base_path)
 models_df = model_stock_generator.create_models(sales_df)
-print(models_df.head(5))
+print(models_df.columns)
 
-
-
-# Compare model stocks with current inventory levels to generate items to be pulled
-# Need to alter the inventory dataframe to include ID and UPC
-# Stock status doesn't have the UPC column, would need to merge with UPC_list
+# ALLOCATE
+# compare model stocks with current inventory levels at the product ID level
+  # Determine quantity to transfer if warehouse had unlimited inventory
+# Run through rankings to allocate based on WH inventory at product ID level
+ # allocate half model stock to each store until out of WH inventory or all models filled
+ # at this stage check what UPCs are available in store and UPCs in WH
