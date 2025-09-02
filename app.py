@@ -24,6 +24,14 @@ inventory_processor.add_keyword(sku_df)
 inventory_processor.add_upc()
 inventory = inventory_processor.clean_inventory()
 
+colors = inventory.get_colors("M-GT-2000-11", 1)
+print(colors)
+print(inventory.get_total_quantity("M-GT-2000-11", 1))
+
+# test inventory functions
+inventory.decrement_quantity('197298379045', 1)
+print(inventory.get_total_quantity("M-GT-2000-11", 1))
+
 # Use RICS inventory detail report to create manageable dataframe of sales
 sales_processor = SalesProcessor(base_path)
 sales_df = sales_processor.pull_sales(sku_df)

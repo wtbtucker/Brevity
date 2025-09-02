@@ -1,61 +1,6 @@
 import pandas as pd
 import os
-
-
-
-class Inventory:
-    '''
-    stores information about current inventory levels for quick lookup
-    inventory = {
-        "M-CUMULUS-10": {
-            "1": {"197966046156": 10, "197968286628": 5},
-            "8": {"197966046156": 2, "197968286635": 8}
-        },
-        "M-1080 (WIDE)-10": {
-            "2": {"black": 20},
-            "8": {"white": 15, "black": 3}
-        }
-    }
-    '''
-    def __init__(self, inventory: dict):
-        self.inv = inventory
-
-
-    def get_colors(self, product_id: str, location: int) -> list[str]:
-        '''
-        Look up the colors currently in stock at a location for a particular product
-        Will use to allocate colors not currently in stock to that location
-        Args: 
-            product_id: Gender, SKU, size eg. M-1080 (WIDE)-10
-            location: integer store code eg. 5
-        '''
-        pass
-
-    # get colors available at a store
-    # check model stock
-
-    def get_total_quantity(self, product_id: str, location: int) -> int:
-        '''
-        Check total quantity of a product available at a location
-        Use for comparing store inventory levels to model stock
-        Use for checking quantity available for distribution from the warehouse
-        Args: 
-            product_id: Gender, SKU, size eg. M-1080 (WIDE)-10
-            location: integer store code eg. 5        
-        '''
-        pass
-
-    def decrement_quantity(self, upc: str, location: int) -> None:
-        '''
-        Use to remove one item from warehouse inventory
-        Args:
-            upc: product barcode eg. 197966046156
-            location: integer store code eg. 5    
-        '''
-
-
-
-
+from Inventory import Inventory
 
 class InventoryProcessor:
     def __init__(self, base_path):
@@ -83,6 +28,7 @@ class InventoryProcessor:
         self.inv_df = pd.merge(upc_df, self.inv_df, how='right', left_on=['SKU', 'COL'], right_on=['SKU', 'SIZE'])      
         print(self.inv_df.head())
         # load dataframe of onhand items from RICS stock status report
+
     def _load_onhand(self):
         ss_df = pd.read_csv(self.base_path + 'FW REPORTS\\STOCK STATUS\\StockStatus.csv', usecols=['StoreCode', 'SKU', 'COL', 'OnHand'], encoding='utf_8_sig',\
             converters={'StoreCode':str, 'SKU':str, 'COL':str})
@@ -121,11 +67,13 @@ class InventoryProcessor:
         Transform dataframe into dictionary datastructure for faster operations
         '''
         inventory = {}
+        upc_to_id = {}
         for _, row in self.inv_df.iterrows():
             id_ = row["PULL ID"]
-            store = row["STORE"]
+            store = int(row["STORE"])
             upc = row["UPC"]
             inv = int(row["INV"])
             inventory.setdefault(id_, {}).setdefault(store, {})[upc] = inv
+            upc_to_id[upc] = id_
 
-        return Inventory(inventory)
+        return Inventory(inventory, upc_to_id)
