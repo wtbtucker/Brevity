@@ -48,6 +48,6 @@ class Inventory:
         product_id = self.upc_to_id[upc]
         quantity = self.inv[product_id][location][upc]
         if quantity == 1:
-            self.inv[product_id][location].remove(upc)
+            del self.inv[product_id][location][upc]
         else:
             self.inv[product_id][location][upc] = quantity - 1

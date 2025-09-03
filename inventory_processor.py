@@ -19,16 +19,14 @@ class InventoryProcessor:
         self.inv_df = pd.merge(self.inv_df, sku_df, on = 'SKU', how = 'outer')
         self.inv_df.dropna(subset=['INV'], inplace=True)
         self.inv_df['PULL ID'] = (self.inv_df['SEX'].astype(str) + '-' + self.inv_df['ITEM'].astype(str) + '-' + \
-            self.inv_df['SIZE'].astype(str))        
-        print(self.inv_df)
+            self.inv_df['SIZE'].astype(str))     
 
     def add_upc(self):
         upc_df = pd.read_csv(self.base_path + 'FW Reports\\UPC List\\UPCList.csv', usecols=['SKU', 'UPC', 'COL'], encoding='utf_8_sig', dtype=str)
         upc_df.drop_duplicates(subset=['UPC'], inplace=True)
         self.inv_df = pd.merge(upc_df, self.inv_df, how='right', left_on=['SKU', 'COL'], right_on=['SKU', 'SIZE'])      
-        print(self.inv_df.head())
-        # load dataframe of onhand items from RICS stock status report
-
+    
+    # load dataframe of onhand items from RICS stock status report
     def _load_onhand(self):
         ss_df = pd.read_csv(self.base_path + 'FW REPORTS\\STOCK STATUS\\StockStatus.csv', usecols=['StoreCode', 'SKU', 'COL', 'OnHand'], encoding='utf_8_sig',\
             converters={'StoreCode':str, 'SKU':str, 'COL':str})
