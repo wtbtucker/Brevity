@@ -16,7 +16,7 @@ class Inventory:
         self.inv = inventory
         self.upc_to_id = upc_to_id
 
-    def get_colors(self, product_id: str, location: int) -> list[str]:
+    def get_colors(self, product_id: str, location: int) -> set[str]:
         '''
         Look up the colors currently in stock at a location for a particular product
         Will use to allocate colors not currently in stock to that location
@@ -24,7 +24,7 @@ class Inventory:
             product_id: Gender, SKU, size eg. M-1080 (WIDE)-10
             location: integer store code eg. 5
         '''
-        return list(self.inv[product_id][location].keys())
+        return set(self.inv[product_id][location].keys())
 
 
     def get_total_quantity(self, product_id: str, location: int) -> int:
@@ -51,3 +51,16 @@ class Inventory:
             del self.inv[product_id][location][upc]
         else:
             self.inv[product_id][location][upc] = quantity - 1
+
+    def increment_quantity(self, upc: str, location: int) -> None:
+        '''
+        Add one item to store inventory
+        Args:
+            upc: product barcode eg. 197966046156
+            location: integer store code eg. 5               
+        '''
+        product_id = self.upc_to_id[upc]
+        if upc in self.inv[product_id][location]:
+            self.inv[product_id][location][upc] += 1
+        else:
+            self.inv[product_id][location][upc] = 1

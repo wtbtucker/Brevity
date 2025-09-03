@@ -24,32 +24,58 @@ inventory_processor.add_keyword(sku_df)
 inventory_processor.add_upc()
 inventory = inventory_processor.clean_inventory()
 
-colors = inventory.get_colors("M-GT-2000-11", 1)
-print(colors)
-print(inventory.get_total_quantity("M-GT-2000-11", 1))
-
-# test inventory functions
-inventory.decrement_quantity('197298379045', 1)
-print(inventory.get_total_quantity("M-GT-2000-11", 1))
-
-inventory.decrement_quantity('197298379045', 1)
-print(inventory.get_total_quantity("M-GT-2000-11", 1))
-colors = inventory.get_colors("M-GT-2000-11", 1)
-print(colors)
-
 # Use RICS inventory detail report to create manageable dataframe of sales
 sales_processor = SalesProcessor(base_path)
 sales_df = sales_processor.pull_sales(sku_df)
-print(sales_df.head(5))
 
 # Use those sales to set ideal inventory levels for each store (model stocks)
+# based on max weekly sales and turn
 model_stock_generator = ModelStockGenerator(base_path)
 models_df = model_stock_generator.create_models(sales_df)
-print(models_df.columns)
 
-# ALLOCATE
-# compare model stocks with current inventory levels at the product ID level
+# Pivot and align
+pivoted = models_df.pivot_table(index="PULL ID", columns="RANK", values="MODEL", fill_value=0)
+models = pivoted.apply(lambda row: row.tolist(), axis=1).to_dict()
+
+store_df = pd.read_csv(base_path + 'Brevity Stuff\\STORES.csv', converters={'STORE':int})
+store_df = store_df.loc[:, ['STORE', 'RANK']]
+rank_dict = dict(zip(store_df['RANK'], store_df['STORE']))
+
+# Iterate through the products that can be distributed
+for product in models.keys():
+
+	# For each product get quantity available for distribution from warehouse
+	wh_quantity = inventory.get_total_quantity(product, 8)
+	for rank, model in enumerate(models[product]):
+		store = rank_dict[rank+1]
+		# get quantity at each store
+		curr_quantity = inventory.get_total_quantity(product, store)
+
+		# If current inventory level is less than model stock
+		# Allocate one item from warehouse to store
+		# prioritize colors not available at store
+		# need to determine data structure for pulls
+		# eventually want a matrix of upc: list of stores
+		# could just mimic the structure of models
+
+
+# will probably want to iterate through the models for a particular id multiple times
+# any reason not to store model logic in a similar data structure to inventory?
+# I need to look up model stock by store and ID
+# no need to decrement
+# want a list of models for a particular ID
+# array in the order of store rankings for each ID
+# iterate through each model id then stores by ranking
+# does every store get 1+ model stock for every item?
+# fewer rows for portland than norwell
+# seems to be creating models correctly
+# for each model run through the rankings
+  # get inventory level and colors for the store
+  # old program allocates one to zero instock first
+  # then half model stock
+  # then full model stock
   # Determine quantity to transfer if warehouse had unlimited inventory
+
 # Run through rankings to allocate based on WH inventory at product ID level
  # allocate half model stock to each store until out of WH inventory or all models filled
  # at this stage check what UPCs are available in store and UPCs in WH
