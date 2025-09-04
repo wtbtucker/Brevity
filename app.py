@@ -39,7 +39,8 @@ pivoted = models_df.pivot_table(index="PULL ID", columns="RANK", values="MODEL",
 models = pivoted.apply(lambda row: row.tolist(), axis=1).to_dict()
 
 store_df = pd.read_csv(base_path + 'Brevity Stuff\\STORES.csv', converters={'STORE':int})
-store_df = store_df.loc[:, ['STORE', 'RANK']]
+store_df = store_df.loc[:, ['STORE', 'RANK', 'LONG']]
+code_to_name = dict(zip(store_df['STORE'], store_df['LONG']))
 rank_dict = {
 	1: 2,
 	2: 1,
@@ -70,6 +71,7 @@ rank_dict = {
 	27: 26,
 	28: 9
 }
+rank_to_name = {rank: code_to_name[code] for rank, code in rank_dict.items()}
 
 pulls = defaultdict(lambda: [0] * 26)
 
@@ -103,21 +105,19 @@ for product in models.keys():
 
 print(len(pulls.keys()))
 pull_df = pd.DataFrame.from_dict(pulls, orient="index")
+pull_df.index.name = "UPC"
 pull_df.reset_index(inplace=True)
-pull_df.rename(columns={"index": "UPC"}, inplace=True)
+pull_df.rename(columns={int(rank-1): store for rank, store in rank_to_name.items()}, inplace=True)
 
 print(pull_df.head(5))
 pull_df.to_csv("warehouse_pulls.csv", index=False)
 
-
-
-		# If current inventory level is less than model stock
-		# Allocate one item from warehouse to store
-		# prioritize colors not available at store
-		# need to determine data structure for pulls
-		# eventually want a matrix of upc: list of stores
-		# could just mimic the structure of models
-
+# If current inventory level is less than model stock
+# Allocate one item from warehouse to store
+# prioritize colors not available at store
+# need to determine data structure for pulls
+# eventually want a matrix of upc: list of stores
+# could just mimic the structure of models
 
 # will probably want to iterate through the models for a particular id multiple times
 # any reason not to store model logic in a similar data structure to inventory?
