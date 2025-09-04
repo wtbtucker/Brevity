@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from Inventory import Inventory
+from collections import defaultdict
 
 class InventoryProcessor:
     def __init__(self, base_path):
@@ -64,14 +65,14 @@ class InventoryProcessor:
         '''
         Transform dataframe into dictionary datastructure for faster operations
         '''
-        inventory = {}
+        inventory = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
         upc_to_id = {}
         for _, row in self.inv_df.iterrows():
             id_ = row["PULL ID"]
             store = int(row["STORE"])
             upc = row["UPC"]
             inv = int(row["INV"])
-            inventory.setdefault(id_, {}).setdefault(store, {})[upc] = inv
+            inventory[id_][store][upc] = inv
             upc_to_id[upc] = id_
 
         return Inventory(inventory, upc_to_id)

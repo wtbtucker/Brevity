@@ -4,6 +4,7 @@ from sales_processor import SalesProcessor
 from inventory_processor import InventoryProcessor
 from model_stock_generator import ModelStockGenerator
 from inventory_processor import Inventory
+from collections import defaultdict
 
 def create_sku_df(filepath): #creates a df that will allow the RICS custom entries to be applied to a df
 	rics_skus_df = pd.read_csv(filepath + 'FW REPORTS\\SKU FILE\\SKUFile.csv', usecols = ['SKU', 'SupplierName', 'CustomEntry', 'CustomEntry3'],\
@@ -39,7 +40,38 @@ models = pivoted.apply(lambda row: row.tolist(), axis=1).to_dict()
 
 store_df = pd.read_csv(base_path + 'Brevity Stuff\\STORES.csv', converters={'STORE':int})
 store_df = store_df.loc[:, ['STORE', 'RANK']]
-rank_dict = dict(zip(store_df['RANK'], store_df['STORE']))
+rank_dict = {
+	1: 2,
+	2: 1,
+	3: 3,
+	4: 28,
+	5: 5,
+	6: 17,
+	7: 4,
+	8: 20,
+	9: 7,
+	10: 14,
+	11: 6,
+	12: 21,
+	13: 15,
+	14: 19,
+	15: 10,
+	16: 11,
+	17: 23,
+	18: 18,
+	19: 25,
+	20: 13,
+	21: 29,
+	22: 12,
+	23: 16,
+	24: 27,
+	25: 22,
+	26: 24,
+	27: 26,
+	28: 9
+}
+
+pulls = defaultdict(lambda: [0] * 26)
 
 # Iterate through the products that can be distributed
 for product in models.keys():
@@ -47,9 +79,37 @@ for product in models.keys():
 	# For each product get quantity available for distribution from warehouse
 	wh_quantity = inventory.get_total_quantity(product, 8)
 	for rank, model in enumerate(models[product]):
+		if model == 0.0:
+			continue
 		store = rank_dict[rank+1]
 		# get quantity at each store
 		curr_quantity = inventory.get_total_quantity(product, store)
+		curr_colors = inventory.get_colors(product, store)
+		
+		# need to allocate 
+		if curr_quantity < model and wh_quantity > 0:
+			wh_colors = inventory.get_colors(product, 8)
+
+			# if possible pick color not available in store
+			ideal_colors = wh_colors - curr_colors
+			if ideal_colors:
+				item_upc = ideal_colors.pop()
+			else:
+				item_upc = wh_colors.pop()
+			inventory.decrement_quantity(item_upc, 8)
+			inventory.increment_quantity(item_upc, store)
+			wh_quantity -= 1
+			pulls[item_upc][rank] += 1
+
+print(len(pulls.keys()))
+pull_df = pd.DataFrame.from_dict(pulls, orient="index")
+pull_df.reset_index(inplace=True)
+pull_df.rename(columns={"index": "UPC"}, inplace=True)
+
+print(pull_df.head(5))
+pull_df.to_csv("warehouse_pulls.csv", index=False)
+
+
 
 		# If current inventory level is less than model stock
 		# Allocate one item from warehouse to store

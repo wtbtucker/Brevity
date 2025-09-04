@@ -24,7 +24,10 @@ class Inventory:
             product_id: Gender, SKU, size eg. M-1080 (WIDE)-10
             location: integer store code eg. 5
         '''
-        return set(self.inv[product_id][location].keys())
+        if location not in self.inv[product_id]:
+            return set([])       
+        else:
+            return set(self.inv[product_id][location].keys())
 
 
     def get_total_quantity(self, product_id: str, location: int) -> int:
@@ -36,7 +39,10 @@ class Inventory:
             product_id: Gender, SKU, size eg. M-1080 (WIDE)-10
             location: integer store code eg. 5        
         '''
-        return sum(list(self.inv[product_id][location].values()))
+        if location not in self.inv[product_id]:
+            return 0
+        else:
+            return sum(list(self.inv[product_id][location].values()))
 
     def decrement_quantity(self, upc: str, location: int) -> None:
         '''
@@ -60,6 +66,9 @@ class Inventory:
             location: integer store code eg. 5               
         '''
         product_id = self.upc_to_id[upc]
+        if location not in self.inv[product_id]:
+            self.inv[product_id][location] = {}
+
         if upc in self.inv[product_id][location]:
             self.inv[product_id][location][upc] += 1
         else:
