@@ -75,21 +75,41 @@ rank_to_name = {rank: code_to_name[code] for rank, code in rank_dict.items()}
 
 pulls = defaultdict(lambda: [0] * 26)
 
-# Iterate through the products that can be distributed
+
 for product in models.keys():
 
-	# For each product get quantity available for distribution from warehouse
 	wh_quantity = inventory.get_total_quantity(product, 8)
-	for rank, model in enumerate(models[product]):
-		if model == 0.0:
+	if wh_quantity <= 0:
+		continue
+
+	# compute deficits per store in ranking order
+	num_stores = len(models[product])
+	deficits = []
+	total_deficits = 0
+
+	for rank in range(num_stores):
+		model_qty = models[product][rank]
+		if model_qty <= 0:
+			deficits.append(0)
 			continue
 		store = rank_dict[rank+1]
-		# get quantity at each store
 		curr_quantity = inventory.get_total_quantity(product, store)
+		store_deficit = max(0, model_qty - curr_quantity)
+		total_deficits += store_deficit
+		deficits.append(store_deficit)
+
+	if total_deficits <= 0:
+		continue
+
+	to_allocate = min(total_deficits, wh_quantity)
+	rank = 0
+	while to_allocate > 0:
+		store_deficit = deficits[rank]
+		store = rank_dict[rank+1]
 		curr_colors = inventory.get_colors(product, store)
 		
 		# need to allocate 
-		if curr_quantity < model and wh_quantity > 0:
+		if store_deficit > 0:
 			wh_colors = inventory.get_colors(product, 8)
 
 			# if possible pick color not available in store
@@ -100,8 +120,10 @@ for product in models.keys():
 				item_upc = wh_colors.pop()
 			inventory.decrement_quantity(item_upc, 8)
 			inventory.increment_quantity(item_upc, store)
-			wh_quantity -= 1
+			to_allocate -= 1
 			pulls[item_upc][rank] += 1
+		rank = (rank + 1) % num_stores
+
 
 print(len(pulls.keys()))
 pull_df = pd.DataFrame.from_dict(pulls, orient="index")
@@ -111,31 +133,3 @@ pull_df.rename(columns={int(rank-1): store for rank, store in rank_to_name.items
 
 print(pull_df.head(5))
 pull_df.to_csv("warehouse_pulls.csv", index=False)
-
-# If current inventory level is less than model stock
-# Allocate one item from warehouse to store
-# prioritize colors not available at store
-# need to determine data structure for pulls
-# eventually want a matrix of upc: list of stores
-# could just mimic the structure of models
-
-# will probably want to iterate through the models for a particular id multiple times
-# any reason not to store model logic in a similar data structure to inventory?
-# I need to look up model stock by store and ID
-# no need to decrement
-# want a list of models for a particular ID
-# array in the order of store rankings for each ID
-# iterate through each model id then stores by ranking
-# does every store get 1+ model stock for every item?
-# fewer rows for portland than norwell
-# seems to be creating models correctly
-# for each model run through the rankings
-  # get inventory level and colors for the store
-  # old program allocates one to zero instock first
-  # then half model stock
-  # then full model stock
-  # Determine quantity to transfer if warehouse had unlimited inventory
-
-# Run through rankings to allocate based on WH inventory at product ID level
- # allocate half model stock to each store until out of WH inventory or all models filled
- # at this stage check what UPCs are available in store and UPCs in WH
