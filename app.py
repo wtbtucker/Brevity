@@ -10,7 +10,7 @@ import timeit
 
 def main():
 	start = timeit.default_timer()
-	base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + '\\'
+	base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + '\\'
 	sku_df = create_sku_df(base_path)
 
 	# Load current inventory levels using stock status and in-transit reports
@@ -37,7 +37,8 @@ def main():
 	models = pivoted.apply(lambda row: row.tolist(), axis=1).to_dict()
 
 	# Initialize empty data structure to eventually hold pull information
-	pulls = defaultdict(lambda: [0] * 29)
+	store_count = len(rank_dict.keys())
+	pulls = defaultdict(lambda: [0] * store_count)
 
 	for product in models.keys():
 		num_stores = len(models[product])
@@ -125,39 +126,8 @@ def load_mapping(base_path: str) -> tuple[dict, dict]:
 
 	store_df = pd.read_csv(base_path + 'Brevity Stuff\\STORES.csv', converters={'STORE':int})
 	store_df = store_df.loc[:, ['STORE', 'RANK', 'LONG']]
-	code_to_name = dict(zip(store_df['STORE'], store_df['LONG']))
-	rank_dict = {
-		1: 2,
-		2: 1,
-		3: 3,
-		4: 28,
-		5: 5,
-		6: 17,
-		7: 4,
-		8: 20,
-		9: 7,
-		10: 14,
-		11: 6,
-		12: 21,
-		13: 15,
-		14: 19,
-		15: 10,
-		16: 11,
-		17: 23,
-		18: 18,
-		19: 25,
-		20: 13,
-		21: 29,
-		22: 12,
-		23: 16,
-		24: 27,
-		25: 22,
-		26: 24,
-		27: 26,
-		28: 9,
-		29: 30
-	}
-	rank_to_name = {rank: code_to_name[code] for rank, code in rank_dict.items()}
+	rank_dict = dict(zip(store_df['RANK'], store_df['STORE']))
+	rank_to_name = dict(zip(store_df['RANK'], store_df['LONG']))
 	return rank_dict, rank_to_name
 
 main()

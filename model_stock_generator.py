@@ -12,12 +12,11 @@ class ModelStockGenerator:
         mod_stock_df = pd.merge(id_df, sale_df, on = 'ID', how = 'left')					#combines all the df's
         mod_stock_df = pd.merge(mod_stock_df, store_df, on = 'STORE', how = 'left') 				#combines all the df's
         mod_stock_df.update(mod_stock_df[['YEAR SALES','MAX WK SALES']].fillna(0))		#fills missing data with a zero
-        mod_stock_df['TURN'] = mod_stock_df['YEAR SALES']/6											#sets turn rate to 5 in the stores
+        mod_stock_df['TURN'] = mod_stock_df['YEAR SALES']/6											#sets turn rate to 6 in the stores
         mod_stock_df['MODEL'] = 1																	#
-        mod_stock_df['MODEL'][(mod_stock_df['TURN'] > 1)] = mod_stock_df['TURN'].round(0).astype(int)
-        mod_stock_df['MODEL'][(mod_stock_df['TURN'] > 1) & (mod_stock_df['MAX WK SALES'] < mod_stock_df['TURN'])] = mod_stock_df['MAX WK SALES'] + 1
-        mod_stock_df['MODEL'][(mod_stock_df['TURN'] > 1) & (mod_stock_df['MAX WK SALES'] + 1 < mod_stock_df['TURN'])] = mod_stock_df['MAX WK SALES'] + 1
-        # mod_stock_df.to_csv(filepath + 'Brevity Stuff\\z-MasterOpt.csv', index=False)								#							
+        mod_stock_df.loc[mod_stock_df['TURN'] > 1, 'MODEL'] = mod_stock_df['TURN'].round(0).astype(int)
+        mod_stock_df.loc[(mod_stock_df['TURN'] > 1) & (mod_stock_df['MAX WK SALES'] < mod_stock_df['TURN']), 'MODEL'] = mod_stock_df['MAX WK SALES'] + 1
+        mod_stock_df.to_csv('z-MasterOpt.csv', index=False)								#							
         return mod_stock_df        
     
     def create_item_db(self):

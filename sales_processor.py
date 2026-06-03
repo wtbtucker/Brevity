@@ -14,7 +14,6 @@ class SalesProcessor:
         '''
         self.clean_sales (sku_df)																	#CALLS FUNCTION - filters sales by date & adds custom entries
         self.unique_df = self.sales_df.drop_duplicates(['ID'])												#filters all the IDs down to unique IDs
-        # unique_df.to_csv(filepath + 'Testing2.csv',index=False)
         self.sum_over_time('LAST 8')												#CALLS FUNCTION - finds the total sold over the last 8 weeks	
         self.sum_over_time('COMP 8')												#CALLS FUNCTION - finds the total sold over the comp 8 weeks
         self.sum_over_time('FUT 2')												#CALLS FUNCTION - finds the total sold over the fut 2 weeks
@@ -33,7 +32,7 @@ class SalesProcessor:
         self.unique_df = pd.merge(self.unique_df, max_df, on = 'ID', how = 'outer')							#adds time frame sales onto unique IDs
         self.unique_df['MAX WK SALES'].fillna(0, inplace=True)											#fills missing mapped data with zero
         self.unique_df.drop(self.unique_df.columns[[2,4,5,6,7,8,9,10]], axis=1, inplace=True)					#drops irrelevant columns
-        #unique_df.to_csv(filepath + 'Z-Sales2.csv', index=False)									#saves sales_df to a file
+        self.unique_df.to_csv('Z-Sales2.csv', index=False)									#saves sales_df to a file
         return self.unique_df
 
     # TODO: pass sku df as argument when initializing class?
