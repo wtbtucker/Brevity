@@ -6,11 +6,13 @@ from model_stock_generator import ModelStockGenerator
 from inventory_processor import Inventory
 from collections import defaultdict
 import timeit
+import yaml
 
 
 def main():
 	start = timeit.default_timer()
-	base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + '\\'
+	config = yaml.safe_load(open("config.yml"))
+	base_path = config["data-root"]
 	sku_df = create_sku_df(base_path)
 
 	# Load current inventory levels using stock status and in-transit reports
@@ -84,7 +86,8 @@ def main():
 	pull_df.rename(columns={int(rank-1): store for rank, store in rank_to_name.items()}, inplace=True)
 
 	print(pull_df.head(5))
-	pull_df.to_csv("warehouse_pulls.csv", index=False)
+	output_dir = config["output-dir"]
+	pull_df.to_csv(f"{output_dir}warehouse_pulls.csv", index=False)
 
 	stop = timeit.default_timer()
 	print("Time: ", stop - start)
