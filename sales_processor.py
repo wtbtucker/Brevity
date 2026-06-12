@@ -32,7 +32,6 @@ class SalesProcessor:
         self.unique_df = pd.merge(self.unique_df, max_df, on = 'ID', how = 'outer')							#adds time frame sales onto unique IDs
         self.unique_df['MAX WK SALES'].fillna(0, inplace=True)											#fills missing mapped data with zero
         self.unique_df.drop(self.unique_df.columns[[2,4,5,6,7,8,9,10]], axis=1, inplace=True)					#drops irrelevant columns
-        self.unique_df.to_csv('Z-Sales2.csv', index=False)									#saves sales_df to a file
         return self.unique_df
 
     # TODO: pass sku df as argument when initializing class?

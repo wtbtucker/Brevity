@@ -15,8 +15,7 @@ class ModelStockGenerator:
         mod_stock_df['TURN'] = mod_stock_df['YEAR SALES']/6											#sets turn rate to 6 in the stores
         mod_stock_df['MODEL'] = 1																	#
         mod_stock_df.loc[mod_stock_df['TURN'] > 1, 'MODEL'] = mod_stock_df['TURN'].round(0).astype(int)
-        mod_stock_df.loc[(mod_stock_df['TURN'] > 1) & (mod_stock_df['MAX WK SALES'] < mod_stock_df['TURN']), 'MODEL'] = mod_stock_df['MAX WK SALES'] + 1
-        mod_stock_df.to_csv('z-MasterOpt.csv', index=False)								#							
+        mod_stock_df.loc[(mod_stock_df['TURN'] > 1) & (mod_stock_df['MAX WK SALES'] < mod_stock_df['TURN']), 'MODEL'] = mod_stock_df['MAX WK SALES'] + 1			
         return mod_stock_df        
     
     def create_item_db(self):

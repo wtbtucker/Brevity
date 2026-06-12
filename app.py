@@ -25,11 +25,13 @@ def main():
 	# Use RICS inventory detail report to create manageable dataframe of sales
 	sales_processor = SalesProcessor(base_path)
 	sales_df = sales_processor.pull_sales(sku_df)
+	sales_df.to_csv("Z-Sales2.csv", index=False)
 
 	# Use those sales to set ideal inventory levels for each store (model stocks)
 	# based on max weekly sales and turn
 	model_stock_generator = ModelStockGenerator(base_path)
 	models_df = model_stock_generator.create_models(sales_df)
+	models_df.to_csv('z-MasterOpt.csv', index=False)
 
 	# Load store rankings
 	rank_dict, rank_to_name = load_mapping(base_path)
